@@ -1,0 +1,34 @@
+{
+  "name": "@builtbyecho/trustlog",
+  "version": "0.1.0",
+  "description": "Human-readable receipts for agent work.",
+  "type": "module",
+  "bin": {
+    "trustlog": "src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "audit",
+    "cli",
+    "receipts",
+    "safety",
+    "trust"
+  ],
+  "author": "BuiltByEcho",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BuiltByEcho/trustlog.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BuiltByEcho/trustlog/issues"
+  },
+  "homepage": "https://github.com/BuiltByEcho/trustlog#readme"
+}

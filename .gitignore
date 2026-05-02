@@ -1,0 +1,5 @@
+node_modules/
+.trustlog/
+.DS_Store
+.env
+.env.*
