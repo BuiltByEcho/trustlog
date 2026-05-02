@@ -1,6 +1,6 @@
 {
   "name": "@builtbyecho/trustlog",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Human-readable receipts for agent work.",
   "type": "module",
   "bin": {
@@ -30,5 +30,11 @@
   "bugs": {
     "url": "https://github.com/BuiltByEcho/trustlog/issues"
   },
-  "homepage": "https://github.com/BuiltByEcho/trustlog#readme"
+  "homepage": "https://github.com/BuiltByEcho/trustlog#readme",
+  "files": [
+    "README.md",
+    "docs/",
+    "src/",
+    "test/"
+  ]
 }
