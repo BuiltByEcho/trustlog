@@ -12,6 +12,8 @@ Trust Log wraps commands and produces clean Markdown + JSON receipts with:
 - secret redaction for common API keys/tokens
 - `<think>...</think>` / reasoning-block stripping
 - risk flags for destructive commands, external actions, failures, redactions, and file changes
+- receipt verification with `trustlog verify` so CI/agents can reject receipts that still contain likely secrets or thinking blocks
+- redacted command argv storage (the raw command is represented by a SHA-256 hash, not leaked in plaintext)
 
 ## Install
 
@@ -31,6 +33,7 @@ npm link
 trustlog run -- npm test
 trustlog run -- node script.js
 trustlog summarize .trustlog/latest.json
+trustlog verify .trustlog/latest.json
 ```
 
 Receipts are written to `.trustlog/` by default:
@@ -39,6 +42,16 @@ Receipts are written to `.trustlog/` by default:
 - timestamped `.md`
 - `latest.json`
 - `latest.md`
+
+## Verify Receipts
+
+Use `trustlog verify` before attaching receipts to pull requests, tickets, or chat handoffs:
+
+```bash
+trustlog verify .trustlog/latest.json
+```
+
+Verification checks the receipt schema, required fields, command hash, redacted command argv, output previews, and that visible receipt content does not still contain obvious secrets or thinking/reasoning-looking blocks.
 
 ## Why
 

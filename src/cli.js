@@ -13,7 +13,7 @@ const VERSION = pkg.version;
 const args = process.argv.slice(2);
 
 function usage() {
-  console.log(`Trust Log ${VERSION} — human-readable receipts for agent work\n\nUsage:\n  trustlog run [--out DIR] [--no-git] -- <command> [args...]\n  trustlog summarize <receipt.json>\n  trustlog --help\n\nExamples:\n  trustlog run -- npm test\n  trustlog run --out .trustlog -- node script.js\n  trustlog summarize .trustlog/latest.json`);
+  console.log(`Trust Log ${VERSION} — human-readable receipts for agent work\n\nUsage:\n  trustlog run [--out DIR] [--no-git] -- <command> [args...]\n  trustlog summarize <receipt.json>\n  trustlog verify <receipt.json>\n  trustlog --help\n\nExamples:\n  trustlog run -- npm test\n  trustlog run --out .trustlog -- node script.js\n  trustlog summarize .trustlog/latest.json\n  trustlog verify .trustlog/latest.json`);
 }
 
 function stripThinking(text) {
@@ -29,7 +29,7 @@ const SECRET_PATTERNS = [
   { name: 'OpenAI API key', regex: /sk-proj-[A-Za-z0-9_\-]{20,}|sk-[A-Za-z0-9]{32,}/g },
   { name: 'GitHub token', regex: /gh[pousr]_[A-Za-z0-9_]{20,}/g },
   { name: 'JWT', regex: /eyJ[A-Za-z0-9_\-]+\.eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/g },
-  { name: 'Generic assignment secret', regex: /\b([A-Z0-9_]*(?:SECRET|TOKEN|API_KEY|PASSWORD|PRIVATE_KEY)[A-Z0-9_]*)\s*=\s*([^\s'\"]{8,})/gi, replacement: '$1=[REDACTED]' }
+  { name: 'Generic assignment secret', regex: /\b([A-Z0-9_]*(?:SECRET|TOKEN|API_KEY|PASSWORD|PRIVATE_KEY)[A-Z0-9_]*)\s*=\s*(?!\[REDACTED\])([^\s'\"]{8,})/gi, replacement: '$1=[REDACTED]' }
 ];
 
 function redact(text) {
@@ -48,6 +48,10 @@ function redact(text) {
 
 function hashCommand(command, commandArgs) {
   return createHash('sha256').update([command, ...commandArgs].join('\0')).digest('hex');
+}
+
+function redactArgv(argv) {
+  return argv.map((part) => redact(part).text);
 }
 
 async function git(args, cwd) {
@@ -148,7 +152,9 @@ async function runCommand(argv) {
   const secretFindings = [...new Set([...stdoutRedacted.findings, ...stderrRedacted.findings])];
   const gitInfo = includeGit ? await gitSnapshot(cwd) : { enabled: false, reason: 'disabled with --no-git' };
   const commandDisplay = redact([command, ...commandArgs].join(' '));
-  const allSecretFindings = [...new Set([...secretFindings, ...commandDisplay.findings])];
+  const argvRedacted = redactArgv([command, ...commandArgs]);
+  const argvFindings = argvRedacted.flatMap((part) => redact(part).findings);
+  const allSecretFindings = [...new Set([...secretFindings, ...commandDisplay.findings, ...argvFindings])];
   const risks = detectRisk({ command, commandArgs, stdout: rawStdout, stderr: rawStderr, exitCode, gitInfo, secretFindings: allSecretFindings });
 
   const receipt = {
@@ -158,7 +164,7 @@ async function runCommand(argv) {
     cwd,
     command: {
       display: commandDisplay.text,
-      argv: [command, ...commandArgs],
+      argv: argvRedacted,
       sha256: hashCommand(command, commandArgs)
     },
     exitCode,
@@ -193,6 +199,37 @@ async function summarize(file) {
   console.log(markdownReceipt(receipt));
 }
 
+function verifyReceipt(receipt) {
+  const errors = [];
+  if (receipt.schema !== 'trustlog.receipt.v1') errors.push('schema is not trustlog.receipt.v1');
+  if (!receipt.id) errors.push('missing id');
+  if (!receipt.createdAt || Number.isNaN(Date.parse(receipt.createdAt))) errors.push('createdAt is missing or invalid');
+  if (typeof receipt.exitCode !== 'number') errors.push('exitCode must be a number');
+  if (!receipt.command?.sha256 || !/^[a-f0-9]{64}$/i.test(receipt.command.sha256)) errors.push('command.sha256 is missing or invalid');
+  if (!Array.isArray(receipt.command?.argv)) errors.push('command.argv must be an array');
+  if (!receipt.output || typeof receipt.output.stdoutPreview !== 'string' || typeof receipt.output.stderrPreview !== 'string') {
+    errors.push('output previews are missing');
+  }
+
+  const visible = JSON.stringify({ command: receipt.command, output: receipt.output });
+  const redacted = redact(visible);
+  if (redacted.findings.length > 0) errors.push(`receipt still contains likely secret material: ${redacted.findings.join(', ')}`);
+  if (/<think>|<thinking>|```(?:thinking|think|reasoning)/i.test(visible)) errors.push('receipt still contains thinking/reasoning-looking content');
+  return errors;
+}
+
+async function verify(file) {
+  if (!file || !existsSync(file)) throw new Error(`Receipt not found: ${file ?? '(missing)'}`);
+  const receipt = JSON.parse(await readFile(file, 'utf8'));
+  const errors = verifyReceipt(receipt);
+  if (errors.length) {
+    console.error('Trust Log receipt verification failed:');
+    for (const error of errors) console.error(`- ${error}`);
+    process.exit(1);
+  }
+  console.log('Trust Log receipt verified: schema, required fields, redaction, and thinking stripping look OK.');
+}
+
 try {
   if (args.includes('--help') || args.includes('-h') || args.length === 0) {
     usage();
@@ -200,6 +237,8 @@ try {
     await runCommand(args.slice(1));
   } else if (args[0] === 'summarize') {
     await summarize(args[1]);
+  } else if (args[0] === 'verify') {
+    await verify(args[1]);
   } else if (args[0] === '--version' || args[0] === '-v') {
     console.log(VERSION);
   } else {
