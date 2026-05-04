@@ -3,3 +3,7 @@ node_modules/
 .DS_Store
 .env
 .env.*
+
+.agent-runs/
+AGENT_BRIEF.md
+AGENT_HANDOFF.md
