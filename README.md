@@ -60,3 +60,10 @@ AI agents are useful, but people get nervous when they cannot tell what happened
 ## Monetization Direction
 
 Trust Log should stay local-first and useful for free. Paid cloud features can add hosted receipts, team audit history, private share links, API ingestion, and compliance retention. See `docs/stripe-integration-reference.md`.
+
+## Agent Skills
+
+This package includes OpenClaw/Claude-style skills under `skills/`:
+
+- `skills/trustlog` — teach agents to create, summarize, and verify Trust Log receipts.
+- `skills/agent-work-receipts` — meta workflow combining `repo-agent-brief`, `agent-runlog`, `trustlog`, and `add-ci --dry-run`.

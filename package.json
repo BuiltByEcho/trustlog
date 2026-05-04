@@ -1,6 +1,6 @@
 {
   "name": "@builtbyecho/trustlog",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Human-readable receipts for agent work.",
   "type": "module",
   "bin": {
@@ -35,6 +35,7 @@
     "README.md",
     "docs/",
     "src/",
-    "test/"
+    "test/",
+    "skills/"
   ]
 }
