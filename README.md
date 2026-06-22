@@ -67,3 +67,7 @@ This package includes OpenClaw/Claude-style skills under `skills/`:
 
 - `skills/trustlog` — teach agents to create, summarize, and verify Trust Log receipts.
 - `skills/agent-work-receipts` — meta workflow combining `repo-agent-brief`, `agent-runlog`, `trustlog`, and `add-ci --dry-run`.
+
+## Release Automation
+
+This package is published from GitHub Actions using npm Trusted Publishing with provenance. Releases are built on GitHub-hosted runners and no long-lived npm publish token is required.
